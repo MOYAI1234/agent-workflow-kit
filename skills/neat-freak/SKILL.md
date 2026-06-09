@@ -3,6 +3,8 @@ name: neat-freak
 description: "项目收尾时同步文档和记忆。做完事 → /neat → 切换/结束。首次运行自动检测 Agent 平台和路径。"
 ---
 
+> Based on [neat-freak](https://github.com/KKKKhazix/Khazix-Skills/tree/main/neat-freak) by 数字生命卡兹克, MIT License.
+
 # Neat Freak — 收尾文档同步
 
 > 做完事就跑 `/neat`，像写完代码要 git commit 一样自然。

@@ -164,6 +164,10 @@ agent-workflow-kit/
 - **平台无关**：不绑定特定 Agent 平台，通过自动检测适配
 - **渐进式**：三个 skill 各自独立，可以只装一个，也可以全装
 
+## 致谢
+
+- **neat-freak** 基于 [数字生命卡兹克](https://github.com/KKKKhazix/Khazix-Skills) 的开源 skill 改编，原项目采用 MIT 许可证。
+
 ## 许可证
 
 [MIT](LICENSE)
