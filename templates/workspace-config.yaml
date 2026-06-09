@@ -1,0 +1,79 @@
+# workspace-config.yaml
+# Agent Workflow Kit — 工作区配置模板
+#
+# 复制本文件到你的工作区根目录，按实际情况填写。
+# 三个 skill 会参考此配置来定位文件和目录。
+
+# ──────────────────────────────────────────
+# 工作区基本信息
+# ──────────────────────────────────────────
+workspace:
+  # 工作区根目录（绝对路径）
+  root: "/path/to/your/workspace"
+  # 工作区名称（用于显示）
+  name: "my-workspace"
+
+# ──────────────────────────────────────────
+# Agent 配置
+# ──────────────────────────────────────────
+agent:
+  # 你使用的 Agent 平台：claude | codex | workbuddy | trae | openclaw
+  platform: "claude"
+  # 项目级配置文件名
+  config_file: "CLAUDE.md"  # 或 "AGENTS.md"
+  # 全局配置路径（~ 展开为 home 目录）
+  global_config: "~/.claude/CLAUDE.md"
+
+# ──────────────────────────────────────────
+# Skills 目录
+# ──────────────────────────────────────────
+skills:
+  # Skills 搜索路径（按优先级排列）
+  directories:
+    - "~/.claude/skills/"
+    - "<project>/skills/"
+  # 事实源目录（编辑 skill 时应该改这里）
+  source_of_truth: "~/.claude/skills/"
+
+# ──────────────────────────────────────────
+# 文档路径（相对于 workspace.root）
+# ──────────────────────────────────────────
+docs:
+  # 工具清单（tool-router 的核心资产）
+  tools_inventory: "docs/tools-inventory.md"
+  # Agent 维护清单（agent-skill-cleanup 参考）
+  agent_maintenance: "docs/agent-maintenance.md"
+  # 记忆文件目录
+  memory_dir: "docs/memory/"
+  # 迁移日志
+  migration_log: "docs/migration-log.md"
+
+# ──────────────────────────────────────────
+# 清理配置
+# ──────────────────────────────────────────
+cleanup:
+  # 隔离目录（相对于 workspace.root）
+  quarantine_dir: "_cleanup_quarantine"
+  # 保护模式：这些目录/文件绝对不删
+  protected_patterns:
+    - ".venv/"
+    - "node_modules/"
+    - ".git/"
+    - "*.db"
+    - "config/"
+    - "raw/"
+    - "profile/"
+
+# ──────────────────────────────────────────
+# 你的项目列表（neat-freak 参考）
+# ──────────────────────────────────────────
+projects:
+  # - name: "project-a"
+  #   path: "project-a/"
+  #   description: "项目 A 描述"
+  #   config: "CLAUDE.md"
+  #
+  # - name: "project-b"
+  #   path: "project-b/"
+  #   description: "项目 B 描述"
+  #   config: "AGENTS.md"
