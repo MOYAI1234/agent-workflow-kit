@@ -116,6 +116,24 @@ which gh git lark-cli node python pip docker kubectl
 └── 不确定？→ 先试工具5（覆盖面最广）
 ```
 
+### 第六步半：补充选择建议
+
+决策树生成后，对每个有多个候选工具的节点，根据 SKILL.md 的 description 补充一句选择建议。格式：
+
+```
+├── 浏览器/网页
+│   ├── 需要登录态 → chrome-mcp-server
+│   ├── 反爬/Cloudflare → CloakBrowser
+│   └── 轻量抓取 → lightpanda MCP
+└── 不确定？→ 先试 chrome-mcp-server（覆盖面最广）
+```
+
+**判断依据**：
+- 读每个 skill 的 SKILL.md description 字段，提取核心能力
+- 如果 description 中有"反爬"、"登录态"、"轻量"等关键词，对应到使用场景
+- 如果无法判断优先级，按安装顺序排列，不加"不确定"提示
+- 只有当确实能从 description 推断出适用场景时才加选择建议
+
 ### 第七步：输出摘要
 
 向用户报告：
