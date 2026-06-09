@@ -1,10 +1,16 @@
 # Changelog
 
-## [0.1.0] - 2026-06-09
+## v0.2.0 — 自动发现
 
-### Added
-- `tool-router` skill — 工具链决策树，帮用户定位"做 X 该用什么工具"
-- `neat-freak` skill — 项目收尾时同步文档和记忆
-- `agent-skill-cleanup` skill — 工作区深度清洁（断链、临时文件、过期 skills）
-- 配置模板：`workspace-config.yaml`、`tools-inventory.md`、`agent-maintenance.md`
-- 使用示例：`examples/my-workflow.md`
+- 去掉所有占位符和手动模板
+- 三个 skill 首次运行时自动扫描工作区，生成工具清单、决策树和基线
+- 删除 `templates/` 目录（不再需要手动填写）
+- tool-router：自动扫描 skills/MCP/CLI/项目，生成决策树
+- neat-freak：自动检测 Agent 平台，生成路径速查
+- agent-skill-cleanup：自动建立工作区基线，后续对比找差异
+
+## v0.1.0 — 初始版本
+
+- 三个 skill 基础版本（tool-router / neat-freak / agent-skill-cleanup）
+- 手动模板和占位符
+- MIT 许可证

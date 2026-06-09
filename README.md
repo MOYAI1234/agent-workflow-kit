@@ -26,33 +26,38 @@ cp -r skills/tool-router ~/.claude/skills/
 cp -r skills/neat-freak ~/.claude/skills/
 cp -r skills/agent-skill-cleanup ~/.claude/skills/
 
-# Codex
+# Codex / .agents
 cp -r skills/tool-router ~/.agents/skills/
 cp -r skills/neat-freak ~/.agents/skills/
 cp -r skills/agent-skill-cleanup ~/.agents/skills/
 ```
 
-### 2. 配置你的工作区
+### 2. 首次运行（自动发现）
 
-复制配置模板并按你的环境填写：
+安装完成后，对你的 agent 说：
 
-```bash
-cp templates/workspace-config.yaml ./
-cp templates/tools-inventory.md docs/
-cp templates/agent-maintenance.md docs/
+```
+扫描工作区，初始化工具链
 ```
 
-编辑 `workspace-config.yaml`，填入你的工作区路径、agent 类型、skills 目录等。
+agent 会自动：
+- 扫描所有 skills 目录，发现你安装的每个 skill
+- 扫描 MCP 连接器配置
+- 扫描 PATH 中的 CLI 工具
+- 扫描工作区中的项目目录
+- 检测你使用的 Agent 平台（Claude Code / Codex / WorkBuddy 等）
+- 生成工具清单（`docs/tools-inventory.md`）
+- 生成决策树（`skills/tool-router/REFERENCE.md`）
+- 生成 Agent 路径速查（`skills/neat-freak/references/agent-paths.md`）
+- 建立工作区基线
 
-### 3. 填写工具清单
+**整个过程自动完成，不需要手动填写任何模板。**
 
-编辑 `docs/tools-inventory.md`，把你实际在用的工具、skills、MCP 连接器填进去。这是三个 skill 共享的核心资产。
-
-### 4. 开始用
+### 3. 开始用
 
 ```
 # 不知道用什么工具？
-"我想做数据报表，该用什么工具？"  → tool-router 会帮你定位
+"我想做数据报表，该用什么工具？"  → tool-router 帮你定位
 
 # 做完事要同步？
 /neat                              → neat-freak 同步文档和记忆
@@ -67,70 +72,85 @@ cp templates/agent-maintenance.md docs/
 agent-workflow-kit/
 ├── README.md                          # 本文件
 ├── LICENSE                            # MIT
+├── CHANGELOG.md                       # 版本记录
 ├── skills/
 │   ├── tool-router/                   # 工具链决策树
-│   │   ├── SKILL.md                   # 入口
-│   │   └── REFERENCE.md              # 决策树详情（模板）
+│   │   ├── SKILL.md                   # 入口（含初始化流程）
+│   │   └── REFERENCE.md              # 决策树（首次运行自动生成）
 │   ├── neat-freak/                    # 收尾文档同步
-│   │   ├── SKILL.md                   # 入口
+│   │   ├── SKILL.md                   # 入口（含初始化流程）
 │   │   └── references/
-│   │       ├── agent-paths.md         # Agent 路径速查（模板）
-│   │       └── sync-matrix.md         # 变更影响矩阵
+│   │       ├── agent-paths.md         # Agent 路径（首次运行自动生成）
+│   │       └── sync-matrix.md         # 变更影响矩阵（通用）
 │   └── agent-skill-cleanup/           # 工作区清理
-│       ├── SKILL.md                   # 入口
+│       ├── SKILL.md                   # 入口（含初始化流程）
 │       ├── REFERENCE.md              # 详细规则
 │       └── SYNC.md                   # 工具链同步指南
-├── templates/
-│   ├── workspace-config.yaml          # 工作区配置模板
-│   ├── tools-inventory.md             # 工具清单模板
-│   └── agent-maintenance.md           # Agent 维护清单模板
 └── examples/
-    └── my-workflow.md                 # 自定义工作流示例
+    └── my-workflow.md                 # 使用示例
 ```
 
 ## 三个 Skill 的关系
 
 ```
-做事时                    做完时                   定期时
-──────                    ──────                   ──────
-tool-router              neat-freak              agent-skill-cleanup
-"用什么工具？"            "同步文档"               "清理工作区"
-     │                        │                        │
-     └────────────────────────┼────────────────────────┘
-                              │
-                    共享：tools-inventory.md
-                    （你的工具清单 = 唯一事实源）
+首次安装                    日常使用
+──────────                  ────────
+"扫描工作区"                "我想做 X"
+      │                          │
+      ▼                          ▼
+ 自动发现                   tool-router
+ skills/MCP/CLI             读决策树定位工具
+      │                          │
+      ▼                          ▼
+ 生成清单                   做完事 → /neat
+ 生成决策树                 neat-freak 同步文档
+ 生成基线                          │
+      │                          ▼
+      └──────── 共享 ──────── tools-inventory.md
+                               （唯一事实源）
+                                      │
+                                      ▼
+                             定期清理
+                             agent-skill-cleanup
+                             对比基线找差异
 ```
 
-**tool-router** 负责发现和选择工具。它读取你的工具清单，按决策树帮你定位"做 X 该用什么"。
+**核心设计**：三个 skill 共享 `docs/tools-inventory.md` 作为唯一事实源。首次运行时自动生成，后续运行时读写维护。
 
-**neat-freak** 负责收尾同步。每次做完事跑 `/neat`，自动检查哪些文档需要更新、哪些记忆需要清理。
+## 自动发现机制
 
-**agent-skill-cleanup** 负责深度清洁。每周或定期跑一次，清理断链 junction、临时文件、过期 skills。
+### tool-router 发现什么
 
-## 自定义指南
+| 扫描目标 | 扫描方式 | 产出 |
+|---------|---------|------|
+| Skills 目录 | 遍历 `~/.claude/skills/`、`~/.agents/skills/` 等，读 SKILL.md | 每个 skill 的名称、用途、来源平台 |
+| MCP 连接器 | 读 `~/.workbuddy/mcp.json` 等配置文件 | 每个 MCP 的名称、类型、状态 |
+| CLI 工具 | `which` + `--version` | PATH 中可用的 agent 相关工具 |
+| 项目目录 | 扫描工作区根目录，识别 package.json/pyproject.toml 等 | 活跃项目列表 |
 
-### 添加新工具到决策树
+### neat-freak 发现什么
 
-1. 在 `docs/tools-inventory.md` 添加条目
-2. 在 `skills/tool-router/REFERENCE.md` 的对应分类下添加分支
-3. 如果是新分类，加一个新的顶级节点
+| 扫描目标 | 扫描方式 | 产出 |
+|---------|---------|------|
+| Agent 平台 | 检查 `~/.claude/`、`~/.codex/`、`~/.workbuddy/` 等 | 已安装的平台列表 |
+| 配置文件 | 检查每个平台的 CLAUDE.md / AGENTS.md / MEMORY.md 等 | 配置文件路径速查 |
+| 记忆文件 | 检查 `docs/memory/`、`.workbuddy/memory/` 等 | 记忆文件位置 |
 
-### 适配你的 Agent 平台
+### agent-skill-cleanup 发现什么
 
-不同 Agent 平台的配置文件位置不同。编辑 `skills/neat-freak/references/agent-paths.md`，填入你实际使用的平台路径。
-
-支持的平台：Claude Code、OpenAI Codex、WorkBuddy、Trae、OpenClaw 等。
-
-### 自定义清理红线
-
-编辑 `skills/agent-skill-cleanup/REFERENCE.md` 的红线章节，添加你工作区特有的保护规则（比如某些目录绝对不能删）。
+| 扫描目标 | 扫描方式 | 产出 |
+|---------|---------|------|
+| Skills 结构 | 遍历目录，区分真实源/junction/空目录 | skills 关系图 |
+| Junction 关系 | 检测 symlink/junction 指向 | 断链检测基线 |
+| 临时文件 | 按模式匹配（`*.tmp`、`debug_*` 等） | 可清理文件清单 |
+| 文档引用 | 从 CLAUDE.md 等提取路径并验证 | 引用完整性检查 |
 
 ## 设计原则
 
-- **唯一事实源**：工具清单（tools-inventory.md）是三个 skill 共享的核心，改一处全生效
+- **自动发现**：首次运行自动扫描，不需要手动填写模板
+- **唯一事实源**：工具清单是三个 skill 共享的核心
 - **安全优先**：所有删除/移动操作必须用户确认，隔离优先于硬删
-- **平台无关**：不绑定特定 Agent 平台，通过配置适配
+- **平台无关**：不绑定特定 Agent 平台，通过自动检测适配
 - **渐进式**：三个 skill 各自独立，可以只装一个，也可以全装
 
 ## 许可证

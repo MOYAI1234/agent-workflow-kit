@@ -1,34 +1,47 @@
 # 我的工作流 — 使用示例
 
-> 这是一个示例，展示如何用 agent-workflow-kit 的三个 skill 构建自己的工作流。
-
 ## 场景
 
-假设你是一个用 Claude Code 做全栈开发的人，工作区里有 3 个项目：
-- `web-app/` — Next.js 前端
-- `api-server/` — Express 后端
-- `docs/` — 项目文档
+假设你用 Claude Code 做全栈开发，工作区里有 3 个项目，装了几个 skills 和 MCP。
 
-你装了这些 skills：
-- `mp-review` — 代码审查
-- `mp-tdd` — 测试驱动开发
-- `mp-diagnose` — 排障诊断
-- `humanizer` — 去 AI 味
-- 以及 agent-workflow-kit 的三个 skill
+## 第一次使用
 
-## 日常工作流
+```
+你：扫描工作区，初始化工具链
 
-### 早上开始工作
+Agent：（自动执行）
+  → 扫描 ~/.claude/skills/，发现 12 个 skill
+  → 扫描 ~/.agents/skills/，发现 8 个 skill（3 个与 Claude 重叠）
+  → 扫描 MCP 配置，发现 2 个已连接的 MCP
+  → 检查 PATH，发现 gh、git、node、python 等 CLI
+  → 扫描工作区，发现 3 个活跃项目
+  → 检测到 Claude Code 平台
+
+  → 生成 docs/tools-inventory.md（27 个工具条目）
+  → 生成 tool-router/REFERENCE.md（6 个分类的决策树）
+  → 生成 neat-freak/references/agent-paths.md
+  → 建立工作区基线
+
+  完成。已发现 27 个工具，决策树已生成。
+```
+
+## 日常使用
+
+### 找工具
 
 ```
 你：我想给 API 加一个用户认证功能，该用什么工具？
-Agent：（读 tool-router/REFRENCE.md）→ 代码工程分类 → 推荐 /mp-tdd（先写测试再实现）
+
+Agent：（读 REFERENCE.md）
+  → 决策树 → 代码工程 → 测试 → 推荐 /mp-tdd
+  → 加载 mp-tdd skill 执行
 ```
 
-### 写完代码
+### 收尾同步
 
 ```
-你：功能写完了，/neat
+你：/neat
+
 Agent：（neat-freak 启动）
   → git diff 检查改动
   → 发现新增了 /api/auth 路由
@@ -38,53 +51,35 @@ Agent：（neat-freak 启动）
   → 输出变更摘要
 ```
 
-### 周五下午
+### 定期清理
 
 ```
 你：清理一下工作区
+
 Agent：（agent-skill-cleanup 启动）
-  → 盘点：发现 2 个断链 junction、5 个零字节文件、1 个 debug 脚本
+  → 对比基线：发现 2 个新断链、5 个新零字节文件
+  → 低风险清理：删除断链和零字节文件
   → 隔离：旧部署包移到 _cleanup_quarantine/
-  → 复查：断链清零
-  → 同步：更新 tools-inventory.md（skills 数量变化）
+  → 同步：更新 tools-inventory.md
   → 输出清理报告
 ```
 
-## 配置示例
+## 安装新工具后
 
-我的 `workspace-config.yaml`：
+```
+你：我刚装了一个新的 MCP 连接器，更新一下工具链
 
-```yaml
-workspace:
-  root: "/Users/me/projects"
-  name: "my-dev-workspace"
-
-agent:
-  platform: "claude"
-  config_file: "CLAUDE.md"
-  global_config: "~/.claude/CLAUDE.md"
-
-skills:
-  directories:
-    - "~/.claude/skills/"
-  source_of_truth: "~/.claude/skills/"
-
-docs:
-  tools_inventory: "docs/tools-inventory.md"
-  agent_maintenance: "docs/agent-maintenance.md"
-  memory_dir: "docs/memory/"
-
-cleanup:
-  quarantine_dir: "_cleanup_quarantine"
-  protected_patterns:
-    - ".venv/"
-    - "node_modules/"
-    - ".git/"
+Agent：（tool-router 增量扫描）
+  → 只扫描 MCP 配置（跳过已扫描的 skills）
+  → 发现新增 1 个 MCP
+  → 更新 tools-inventory.md
+  → 更新 REFERENCE.md 决策树
+  → 完成
 ```
 
 ## 关键心得
 
-1. **tools-inventory.md 是核心**：三个 skill 都依赖它。花时间填好，后面省很多事。
-2. **/neat 要成为习惯**：就像 `git commit` 一样，做完事就跑。不跑 = 文档腐烂。
-3. **清理先隔离**：agent-skill-cleanup 默认隔离而不是删除。确认没问题再手动删。
-4. **决策树要维护**：装了新工具记得更新 REFERENCE.md，否则 tool-router 找不到它。
+1. **首次运行最重要**：花 2 分钟让 agent 扫描完，后面省无数时间
+2. **/neat 要成为习惯**：就像 `git commit` 一样，做完事就跑
+3. **清理先隔离**：agent-skill-cleanup 默认隔离而不是删除
+4. **增量更新**：装了新工具后说"更新工具链"，不用重新扫描全部

@@ -1,171 +1,166 @@
 ---
 name: neat-freak
-description: 项目收尾时同步文档和记忆，确保知识库始终干净准确。做完事就跑 /neat，像写完代码要 git commit 一样自然。
+description: "项目收尾时同步文档和记忆。做完事 → /neat → 切换/结束。首次运行自动检测 Agent 平台和路径。"
 ---
 
-# 洁癖 — Knowledge Base Neat-Freak
+# Neat Freak — 收尾文档同步
 
-> **核心理念**: 做完事 → /neat → 切换/结束
+> 做完事就跑 `/neat`，像写完代码要 git commit 一样自然。
 >
-> 趁你还记得改了什么，马上同步文档。等到下周再整理，你已经忘了当时为什么这么改了。
+> 自动生成的文件：
+> - `references/agent-paths.md` — Agent 平台路径速查（首次运行自动检测）
 
-## 触发方式
+## 两种模式
 
-### 显式触发
-- `/neat`
-- `/sync`
-- `同步文档`
-- `同步项目记忆`
-- `收尾同步`
-- `整理项目文档`
-- `这个阶段做完了，同步一下`
+| 模式 | 触发条件 | 做什么 |
+|------|---------|--------|
+| **初始化** | `references/agent-paths.md` 不存在或用户说"检测路径" | 自动扫描系统，检测 Agent 平台和配置文件位置 |
+| **同步** | `references/agent-paths.md` 已存在 | 正常的文档同步流程 |
 
-### 不要触发的情况
-- `整理一下`（太泛化）
-- `梳理一下`
-- `总结一下`
-- `帮我理清思路`
+---
 
-只有当用户明确要修改文档、记忆、交接信息时，才触发本 skill。
+## 初始化流程（首次运行）
 
-## 三种模式
+当 `references/agent-paths.md` 不存在或用户要求重新检测时，执行以下扫描：
 
-| 模式 | 触发方式 | 适用场景 |
-|------|---------|---------|
+### 第一步：检测 Agent 平台
+
+逐一检查以下平台是否存在：
+
+```bash
+# Claude Code
+ls ~/.claude/CLAUDE.md 2>/dev/null
+ls ~/.claude/skills/ 2>/dev/null
+
+# OpenAI Codex
+ls ~/.codex/AGENTS.md 2>/dev/null
+ls ~/.codex/skills/ 2>/dev/null
+ls ~/.agents/skills/ 2>/dev/null
+
+# WorkBuddy
+ls ~/.workbuddy/MEMORY.md 2>/dev/null
+ls ~/.workbuddy/skills/ 2>/dev/null
+
+# Trae / SOLO
+ls ~/.trae/ 2>/dev/null
+
+# OpenClaw
+ls ~/.openclaw/CLAUDE.md 2>/dev/null
+ls ~/.openclaw/skills/ 2>/dev/null
+```
+
+### 第二步：检测工作区配置文件
+
+对每个检测到的平台，找到其配置文件位置：
+
+```bash
+# 全局配置
+~/.claude/CLAUDE.md
+~/.codex/AGENTS.md
+~/.workbuddy/MEMORY.md
+~/.workbuddy/SOUL.md
+~/.workbuddy/IDENTITY.md
+
+# 项目级配置（在工作区根目录）
+<workspace>/CLAUDE.md
+<workspace>/AGENTS.md
+<workspace>/.claude/settings.json
+<workspace>/.workbuddy/memory/
+```
+
+### 第三步：检测记忆文件位置
+
+```bash
+# Claude Code 项目记忆
+~/.claude/projects/<project-hash>/memory/
+
+# WorkBuddy 记忆
+<workspace>/.workbuddy/memory/
+<workspace>/.workbuddy/memory/YYYY-MM-DD.md
+<workspace>/.workbuddy/memory/MEMORY.md
+
+# 通用 docs 目录
+<workspace>/docs/memory/
+```
+
+### 第四步：生成 agent-paths.md
+
+将检测结果写入 `references/agent-paths.md`，格式：
+
+```markdown
+# Agent 平台路径速查
+
+> 自动生成于 YYYY-MM-DD。如需更新，对 agent 说"重新检测路径"。
+
+## 已检测到的平台
+
+### Claude Code
+- 全局配置：~/.claude/CLAUDE.md
+- Skills 目录：~/.claude/skills/
+- 项目配置：<workspace>/CLAUDE.md
+- 记忆文件：~/.claude/projects/<hash>/memory/
+
+### WorkBuddy
+- 全局记忆：~/.workbuddy/MEMORY.md
+- Skills 目录：~/.workbuddy/skills/
+- 项目记忆：<workspace>/.workbuddy/memory/
+
+（... 每个检测到的平台都列出 ...）
+
+## 未检测到的平台
+
+- OpenAI Codex：未安装
+- Trae：未安装
+（... 列出未检测到的平台 ...）
+```
+
+### 第五步：输出摘要
+
+向用户报告：
+- 检测到了哪些平台
+- 每个平台的配置文件位置
+- 提示用户检查是否准确
+
+---
+
+## 同步流程（日常使用）
+
+`references/agent-paths.md` 已存在时，按以下流程执行：
+
+### 触发方式
+
+| 模式 | 触发 | 适用场景 |
+|------|------|---------|
 | **dry-run** | `/neat --dry-run` | 只审查，不修改文件 |
 | **light** | `/neat` | 日常小步开发收尾（默认） |
 | **full** | `/neat --full` | 大功能完成、交接、全量整理 |
 
-## 执行流程
+### 执行步骤
 
-### 第零步：Git 安全检查
+1. **Git 安全检查**
+   - `git status --short` — 查看哪些文件被修改
+   - `git diff --stat` — 查看修改规模
+   - 如有未提交的改动，先 commit（但不 push）
 
-修改任何文件之前，先确认工作区状态：
+2. **盘点现状**
+   - light：查根目录 + 相关 docs
+   - full：查所有 .md 文件、docs/ 目录、记忆文件
 
-```bash
-git status --short
-git diff --stat
-```
+3. **识别变更**
+   - 读 `references/sync-matrix.md`（变更影响矩阵）
+   - 对照 git diff 判断哪些文档需要更新
 
-### 第一步：盘点现状
+4. **实际修改**
+   - **必须真的用工具修改文件**
+   - 修改顺序：docs/ → 配置文件 → 记忆文件
 
-**先 ls，再判断。**
+5. **输出变更摘要**
+   - 模式、Git 状态、文档变更、验证、未处理项
 
-#### light mode 盘点范围
-1. 项目根目录：README.md, CLAUDE.md, AGENTS.md, .env.example, package.json 等
-2. 与本次改动直接相关的 docs/
-3. agent 记忆文件（如有）
+### 编辑原则
 
-#### full mode 盘点范围
-1. 所有 agent 记忆文件
-2. 项目根目录所有 .md
-3. docs/ 下所有 .md
-4. 散落在其他目录的 .md
-
-**输出文件清单**（内部用），对每个文件标：「评估过 / 要改 / 不用改」。漏一个不行。
-
-### 第二步：识别变更
-
-用**变更影响矩阵**思考（详见 [references/sync-matrix.md](references/sync-matrix.md)）：
-
-| 本次改动 | 要改的文档 |
-|---------|-----------|
-| 新增 API/路由 | 项目根 markdown + integration-guide + architecture |
-| 新增环境变量 | 项目根 markdown + runbook + integration-guide |
-| 新增数据库表 | 项目根 markdown + architecture |
-| 新增大特性 | 以上全部 + handoff |
-| 跨项目改动 | **上下游两边的 docs 都要改** |
-
-**关键检查**：这次改动是不是跨项目的？如果是，所有依赖项目的文档都要同步。
-
-### 第三步：实际修改
-
-**必须真的用工具修改文件**，"我会怎么改"的描述不算完成。
-
-**修改顺序**：先改 docs/ → 再改 CLAUDE.md/AGENTS.md → 最后理记忆
-
-**编辑原则**：
-- **合并优于追加**：新信息更新旧条目，不重复添加
-- **删除优于保留**：过期信息比没有信息更糟糕
-- **精确优于冗长**：一条记忆说一件事
-- **绝对时间**：永远写 `2026-05-27`，不写"今天"
-- **面向读者**：想象对方只有 5 分钟能看完
-- **受众不混**：CLAUDE.md 不抄 docs/ 全文，docs/ 不写"我记得上次……"
-
-**文档真实性校验**：
-- README 的运行命令必须真实存在于 package.json / Makefile 等
-- API 路由必须能在代码中找到定义
-- 环境变量必须在代码或 .env.example 中使用
-- 如果无法确认，不要写成已存在事实
-
-### 第四步：自检清单
-
-改完后逐条检查：
-
-- [ ] 第一步列出的每个文件，都判断了"不用改"或"已改"
-- [ ] CLAUDE.md/AGENTS.md 里提到的路径/命令/环境变量在代码中真实存在
-- [ ] README 的安装/运行步骤跟代码一致
-- [ ] 新增 API：在 integration-guide 和 architecture 都出现了
-- [ ] 新增环境变量：在 runbook 和项目根 markdown 都出现了
-- [ ] 没有相对时间遗留（"今天"、"昨天"、"最近"）
-- [ ] 没有覆盖用户原本未提交的改动
-- [ ] dry-run mode 下没有修改任何文件
-
-**哪条打不了勾，回去补。**
-
-### 第五步：输出变更摘要
-
-```markdown
-## 同步完成
-
-### 模式
-- 本次模式：light / full / dry-run
-- 是否修改文件：是 / 否
-
-### Git 状态
-- 修改前：简述 git status
-- 修改后：简述 git status
-
-### 文档变更
-- xxx/CLAUDE.md — xxx
-- xxx/README.md — xxx
-- xxx/docs/xxx.md — xxx
-
-### 验证
-- 已确认命令/路由/环境变量真实存在：xxx
-
-### 未处理
-- xxx（原因）
-```
-
-## 特殊情况
-
-**项目还没有 README 或 CLAUDE.md**：判断项目是否到了"有可运行代码"的阶段。是 → 创建。还在 vibe 阶段 → 跳过，但摘要里提一句。
-
-**对话没有产生新事实**：审查现有文档有没有过期/冲突/相对时间——审查本身就有价值。
-
-**跨项目改动**：每个项目都要跑一次完整的第一步。不要假设一个项目的 docs 改了，另一个就不用。
-
-## 你的工作区适配
-
-> 根据你的实际项目结构编辑此章节。参考 `references/agent-paths.md` 填写你的 Agent 路径。
-
-### 项目结构
-<!-- TODO: 列出你的工作区子项目 -->
-- project-a/ — 项目 A 描述
-- project-b/ — 项目 B 描述
-
-### Agent 记忆位置
-<!-- TODO: 填写你的 Agent 配置和记忆文件位置 -->
-- Agent A: CLAUDE.md + docs/memory/
-- Agent B: AGENTS.md
-
-### 同步重点
-- 新增 Skills → 更新 CLAUDE.md 的可用工具章节
-- 新增脚本 → 更新 scripts/ 目录说明
-- 跨项目改动 → 检查所有依赖项目的文档
-
-## 参考资料
-
-- **[references/sync-matrix.md](references/sync-matrix.md)** — 变更类型 → 要改哪些文件的完整映射
-- **[references/agent-paths.md](references/agent-paths.md)** — 各 Agent 的记忆与配置路径速查
+- **合并优于追加** — 文档是给人读的，不是日志
+- **删除优于保留** — 过期信息比没有信息更糟糕
+- **精确优于冗长** — 每句话都要有信息量
+- **绝对时间** — 永远写 `2026-06-09`，不写"今天"
+- **面向读者** — 想象对方只有 5 分钟能看完
