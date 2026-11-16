@@ -35,14 +35,14 @@
 
 \```
 要做什么？
-├── A股每日选股→投顾管线（模拟交易） → mx-berk-pipeline（skill，v2.15.10）
+├── 模拟仓执行+数据适配+工作流编排（薄层） → mx-berk-pipeline（skill，v2.16.4）
 │     关联：investment-checklist（六关定性）/ trade-reflection-layer（反省+语义层）
 │     数据：mx-xuangu / mx-data / tdx-connector（付费优先）/ mx-moni（模拟盘）
 ├── 交易清仓反省 / 教训反哺 → trade-reflection-layer（semantic-layer.md）
 └── 财报/行情取数 → tdx-connector → 腾讯 qt.gtimg.cn → 新浪/东财（最后兜底）
 \```
 
-> 只登记版本与路由，量化规则以 mx-berk-pipeline 正文为单一真相源，此处不复制数字。
+> 只登记版本与路由，量化/定性条件以 trade-reflection-layer/references/semantic-layer.md 为单一真相源（mx-berk 薄层只编排节拍、不复制条件），此处不复制数字。
 
 ## Agent 归属速查
 
